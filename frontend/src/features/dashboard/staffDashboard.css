@@ -1,0 +1,64 @@
+.dashboard-card,
+.dashboard-shortcut,
+.dashboard-month {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--navy);
+}
+
+.dashboard-card {
+  display: block;
+  min-width: 0;
+  border-radius: 1rem;
+  padding: 1.25rem;
+}
+
+.dashboard-card-icons {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--focus);
+}
+
+.dashboard-card-icons span {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border-radius: .7rem;
+  background: var(--pale-blue);
+}
+
+.dashboard-month {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem .75rem;
+  padding: .45rem .65rem;
+  border-radius: .65rem;
+  font-size: .875rem;
+  font-weight: 650;
+}
+
+.dashboard-month input {
+  min-width: 0;
+  border: 1px solid var(--field-border);
+  border-radius: .4rem;
+  padding: .3rem .5rem;
+  background: var(--field);
+}
+
+.dashboard-shortcut {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  border-radius: .55rem;
+  padding: .45rem .85rem;
+  font-weight: 650;
+}
+
+.dashboard-shortcut-primary { border-color: #12558c; background: #12558c; color: #fff; }
+
+.dashboard-shortcut:not(.dashboard-shortcut-primary):hover { border-color: var(--control-hover); }

@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-border: var(--border);
+  --color-field: var(--field);
+  --color-field-border: var(--field-border);
+}
+
+:root {
+  font-family: system-ui, sans-serif;
+  color-scheme: light;
+  color: #142340;
+  background-color: var(--page);
+  --page: #f0f8ff;
+  --surface: #eaf6ff;
+  --surface-raised: #e0f2fe;
+  --border: #d6eaf8;
+  --field: #f9fcff;
+  --field-border: #64829c;
+  --table-header: #d5ebfa;
+  --table-stripe: #e3f1fc;
+  --navy: #101e3c;
+  --blue: #2459cf;
+  --muted: #52627b;
+  --pale-blue: #dcefff;
+  --focus: #075985;
+  --control-hover: #5b99c5;
+  --control-shadow: 0 7px 16px #183e6224;
+  --feedback-duration: 170ms;
+}
+
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+:where(input, textarea)::placeholder { color: var(--muted); opacity: 1; }
+
+:where(.surface-banner) {
+  border: 1px solid var(--border);
+  background: linear-gradient(115deg, var(--surface-raised), var(--surface));
+  color: var(--navy);
+}
+
+:where(button, .interactive-action, .interactive-card) {
+  transition: translate var(--feedback-duration) ease, box-shadow var(--feedback-duration) ease;
+}
+
+:where(.interactive-card) {
+  transition: translate var(--feedback-duration) ease, box-shadow var(--feedback-duration) ease,
+    border-color var(--feedback-duration) ease;
+}
+
+@media (hover: hover) {
+  :where(.interactive-card):hover {
+    translate: 0 -2px;
+    border-color: var(--control-hover);
+    box-shadow: var(--control-shadow);
+  }
+}
+
+:where(button:not(:disabled), .interactive-action, .interactive-card):active {
+  translate: 0 1px;
+}
+
+:where(.sidebar a, [role="tab"]) {
+  transition: background-color var(--feedback-duration) ease, border-color var(--feedback-duration) ease,
+    color var(--feedback-duration) ease;
+}
+
+:where(input, select, textarea) {
+  transition: border-color var(--feedback-duration) ease, box-shadow var(--feedback-duration) ease;
+}
+
+:where(input, select, textarea):focus {
+  box-shadow: 0 0 0 2px #07598525;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(button, .interactive-action, .interactive-card, .sidebar a, [role="tab"], input, select, textarea) {
+    transition: none;
+    translate: none;
+  }
+  :where(button, .interactive-action, .interactive-card):is(:hover, :active) { translate: none; }
+}
