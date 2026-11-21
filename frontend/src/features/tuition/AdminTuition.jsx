@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { AdminBatchPage, fieldClass } from '../admin/AdminBatchPage.jsx'
-import { coveredStatus, parseFee, paymentStatuses, readTuition, saveTuition, scholarships, tuitionFor } from './tuitionRepository.js'
+import { coveredStatus, feeNotSetStatus, noAmountDueStatus, parseFee, paymentStatuses, readTuition, saveTuition, scholarships, tuitionFor, tuitionStatuses } from './tuitionRepository.js'
 
 import { formatTuitionAmount } from './tuitionFormat.js'
 import { TuitionHistory } from './StudentTuition.jsx'
@@ -9,14 +9,15 @@ import { TuitionHistory } from './StudentTuition.jsx'
 const currentMonth = () => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Dhaka', dateStyle: 'short' }).format(new Date()).slice(0, 7)
 
 function TuitionRow({ student, record, onSave, mode }) {
-  const [fee, setFee] = useState(String(record.baseFee / 100))
+  const [fee, setFee] = useState(() => record.baseFee === null ? '' : String(record.baseFee / 100))
   const [feeError, setFeeError] = useState('')
   const feeErrorId = React.useId()
 
   function submitFee(event) {
     event.preventDefault()
     try {
-      onSave({ baseFee: parseFee(fee) })
+      const baseFee = parseFee(fee)
+      if (onSave({ baseFee })) setFee(String(baseFee / 100))
       setFeeError('')
     } catch (error) {
       setFeeError(error.message)
@@ -34,14 +35,14 @@ function TuitionRow({ student, record, onSave, mode }) {
           <div className="flex items-center gap-2">
             <span aria-hidden="true" className="text-xs text-slate-600">BDT</span>
             <input type="text" inputMode="decimal" className={fieldClass + ' min-w-0'}
-              aria-label={'Base fee in BDT for ' + student.name} value={fee}
+              aria-label={'Base fee in BDT for ' + student.name} placeholder={record.baseFee === null ? feeNotSetStatus : undefined} value={fee}
               aria-invalid={Boolean(feeError)} aria-describedby={feeError ? feeErrorId : undefined}
               onChange={event => { setFee(event.target.value); setFeeError('') }} />
             <button type="submit" className="rounded-lg border border-surface-border px-2 py-2 font-semibold text-blue-800 hover:bg-blue-50"
               aria-label={'Save fee for ' + student.name}>Save</button>
           </div>
           {feeError && <p id={feeErrorId} role="alert" className="mt-1 text-sm text-red-800">{feeError}</p>}
-        </form> : formatTuitionAmount(record.baseFee)}
+        </form> : record.baseFee === null ? feeNotSetStatus : formatTuitionAmount(record.baseFee)}
       </td>
       <td>
         {['management', 'scholarship'].includes(mode) ? <select className={fieldClass + ' min-w-20'} aria-label={'Scholarship for ' + student.name}
@@ -49,7 +50,7 @@ function TuitionRow({ student, record, onSave, mode }) {
           {scholarships.map(value => <option key={value} value={value}>{value}%</option>)}
         </select> : record.scholarship + '%'}
       </td>
-      <td className="whitespace-nowrap font-semibold tabular-nums">{formatTuitionAmount(record.due)}</td>
+      <td className="whitespace-nowrap font-semibold tabular-nums">{record.due === null ? '—' : formatTuitionAmount(record.due)}</td>
       <td>
         {record.due > 0 && ['management', 'payment'].includes(mode) ? (
           <select className={fieldClass} aria-label={'Payment status for ' + student.name}
@@ -62,9 +63,17 @@ function TuitionRow({ student, record, onSave, mode }) {
   )
 }
 
-function BatchTuition({ students, mode, initialMonth }) {
-  const [month, setMonth] = useState(() => initialMonth ?? currentMonth())
+const emptyByStatus = {
+  Paid: 'No paid students for this batch and month.',
+  Unpaid: 'No unpaid students for this batch and month.',
+  [coveredStatus]: 'No students covered by scholarship for this batch and month.',
+  [feeNotSetStatus]: 'No students with unset fees for this batch and month.',
+  [noAmountDueStatus]: 'No students with zero fees due for this batch and month.',
+}
+
+function BatchTuition({ students, mode, month, onMonthChange }) {
   const [filter, setFilter] = useState('All statuses')
+  const [search, setSearch] = useState('')
   const [historyId, setHistoryId] = useState('')
   const historyStudent = students.find(student => student.historyId === historyId)
   const [data, setData] = useState(() => {
@@ -75,15 +84,26 @@ function BatchTuition({ students, mode, initialMonth }) {
     }
   })
   const [feedback, setFeedback] = useState(null)
-  const rows = students.map(student => ({ student, record: tuitionFor(data.records, month, student.historyId) }))
-    .filter(({ record }) => filter === 'All statuses' || record.status === filter)
+  const roster = students.map(student => ({ student, record: tuitionFor(data.records, month, student.historyId) }))
+  const counts = Object.fromEntries(tuitionStatuses.map(status => [status, 0]))
+  for (const { record } of roster) counts[record.status]++
+  const query = search.trim().toLowerCase()
+  const rows = roster.filter(({ student, record }) =>
+    (filter === 'All statuses' || record.status === filter) &&
+    (student.name.toLowerCase().includes(query) || student.id.toLowerCase().includes(query)))
+  function selectFilter(status) {
+    setFilter(status)
+    setFeedback(null)
+  }
 
   function save(student, changes) {
     try {
       setData({ records: saveTuition(month, student.historyId, changes), error: '' })
       setFeedback({ message: 'Tuition updated for ' + student.name + '.', error: false })
+      return true
     } catch {
       setFeedback({ message: 'Tuition could not be saved. Check the billing month and try again.', error: true })
+      return false
     }
   }
 
@@ -91,29 +111,57 @@ function BatchTuition({ students, mode, initialMonth }) {
 
   return (
     <>
-      <div className="mt-4 grid max-w-xl gap-4 sm:grid-cols-2">
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <label className="block min-w-0 text-sm font-semibold">Billing month
           <input type="month" className={fieldClass + ' mt-1'} value={month} required
-            onChange={event => { setMonth(event.target.value); setFeedback(null) }} />
+            onChange={event => { onMonthChange(event.target.value); selectFilter('All statuses') }} />
         </label>
         <label className="block text-sm font-semibold">Filter by payment status
           <select className={fieldClass + ' mt-1'} value={filter}
-            onChange={event => { setFilter(event.target.value); setFeedback(null) }}>
-            {['All statuses', ...paymentStatuses, coveredStatus].map(status => <option key={status}>{status}</option>)}
+            onChange={event => selectFilter(event.target.value)}>
+            {['All statuses', ...tuitionStatuses].map(status => <option key={status}>{status}</option>)}
           </select>
         </label>
+        <label className="block min-w-0 text-sm font-semibold">Search roster
+          <input type="search" className={fieldClass + ' mt-1'} placeholder="Name or student ID" value={search}
+            onChange={event => setSearch(event.target.value)} />
+        </label>
       </div>
+      {mode === 'management' && (
+        <p className="mt-4 text-sm text-slate-600">Payment status tracks payments received outside the portal.</p>
+      )}
+      {month && (
+        <section aria-label="Batch payment summary" className="mt-4">
+          <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+            {[...paymentStatuses, coveredStatus, feeNotSetStatus].map(status => (
+              <button key={status} type="button" aria-pressed={filter === status}
+                className="interactive-card rounded-xl border border-surface-border bg-field px-3 py-2 text-left aria-pressed:border-sky-700 aria-pressed:bg-sky-100 aria-pressed:ring-1 aria-pressed:ring-sky-700"
+                onClick={() => selectFilter(status)}>
+                <span className="block text-sm font-semibold text-slate-700">{status}</span>
+                <span className="block text-xl font-bold tabular-nums">{counts[status]}</span>
+              </button>
+            ))}
+          </div>
+          {counts[noAmountDueStatus] > 0 && <p className="mt-2 text-sm text-slate-600">{noAmountDueStatus} · {counts[noAmountDueStatus]}</p>}
+          {filter !== 'All statuses' && (
+            <button type="button" className="mt-3 rounded-lg border border-field-border px-3 py-2 text-sm font-semibold text-blue-900 hover:bg-sky-100"
+              onClick={() => selectFilter('All statuses')}>Clear filter</button>
+          )}
+        </section>
+      )}
       {feedback && <p className={'mt-4 text-sm ' + (feedback.error ? 'text-red-800' : 'text-blue-900')}
         role={feedback.error ? 'alert' : 'status'}>{feedback.message}</p>}
       {!students.length ? <p className="mt-5 text-slate-600">No students in this batch yet.</p> :
         !month ? <p className="mt-5 text-slate-600">Choose a billing month to view tuition.</p> :
-        !rows.length ? <p className="mt-5 text-slate-600">No students match this payment status.</p> : (
+        !rows.length ? <p className="mt-5 text-slate-600" role="status">
+          {counts[filter] === 0 ? emptyByStatus[filter] : 'No students match your search and payment filter.'}
+        </p> : (
           <div className="table-wrap" role="region" tabIndex={0} aria-label="Tuition roster">
             <table className="min-w-2xl">
               <thead><tr>{['Student', 'Base fee', 'Scholarship', 'Amount due', 'Payment status'].map(title =>
                 <th key={title} scope="col">{title}</th>)}</tr></thead>
               <tbody>{rows.map(({ student, record }) => (
-                <TuitionRow key={JSON.stringify([month, student.historyId, record.baseFee])}
+                <TuitionRow key={JSON.stringify([month, student.historyId])}
                   student={student} record={record} mode={mode} onSave={changes => save(student, changes)} />
               ))}</tbody>
             </table>
@@ -136,12 +184,22 @@ function BatchTuition({ students, mode, initialMonth }) {
 }
 
 export default function AdminTuition({ title = 'Tuition Management', mode = 'management' }) {
-  const [params] = useSearchParams()
+  const [params, setParams] = useSearchParams()
   const requestedMonth = params.get('month')
-  const initialMonth = /^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth) ? requestedMonth : undefined
+  const month = requestedMonth === '' || /^\d{4}-(0[1-9]|1[0-2])$/.test(requestedMonth)
+    ? requestedMonth : currentMonth()
+
+  function changeMonth(nextMonth) {
+    setParams(previous => {
+      const next = new URLSearchParams(previous)
+      next.set('month', nextMonth)
+      return next
+    }, { replace: true })
+  }
+
   return (
     <AdminBatchPage title={title}>
-      {({ batch, students }) => <BatchTuition key={batch + (initialMonth ?? "")} students={students} mode={mode} initialMonth={initialMonth} />}
+      {({ batch, students }) => <BatchTuition key={batch} students={students} mode={mode} month={month} onMonthChange={changeMonth} />}
     </AdminBatchPage>
   )
 }

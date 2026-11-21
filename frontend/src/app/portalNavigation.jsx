@@ -31,7 +31,7 @@ const institute = { title: 'Institute', pages: [
 const studentAccounts = { title: 'Accounts', pages: [
   { path: 'student-ledger', title: 'Student Ledger', icon: Receipt, page: <StudentTuition title="Student Ledger" /> },
   { path: 'online-payment', title: 'Online Payment', icon: CreditCard, empty: 'Online payment is currently unavailable.' },
-  { path: 'tuition-fee-waiver', title: 'Tuition Fee Waiver', icon: Tags, page: <StudentTuition title="Tuition Fee Waiver" waiverOnly /> },
+  { path: 'tuition-fee-waiver', hiddenFromSidebar: true, title: 'Tuition Fee Waiver', icon: Tags, page: <StudentTuition title="Tuition Fee Waiver" waiverOnly /> },
 ] }
 
 const adminAccounts = { title: 'Accounts', pages: [

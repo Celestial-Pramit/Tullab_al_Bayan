@@ -25,7 +25,7 @@ function mergePreviousRoster(previous) {
     !ids.has(student.id.toLowerCase()) && !ids.has(student.historyId.toLowerCase()) && !emails.has(student.email))]
 }
 
-export function readRoster() {
+function readStoredRoster() {
   const saved = localStorage.getItem(storageKey)
   if (saved !== null) return JSON.parse(saved)
 
@@ -33,6 +33,23 @@ export function readRoster() {
   const roster = previous === null ? demoRoster : mergePreviousRoster(JSON.parse(previous))
   localStorage.setItem(storageKey, JSON.stringify(roster))
   return roster
+}
+
+export function readRoster() {
+  return readStoredRoster().filter(student => !student.deletedAt)
+}
+
+export function deleteStudent(historyId) {
+  const roster = readStoredRoster()
+  if (!roster.some(student => student.historyId === historyId && !student.deletedAt)) {
+    throw new Error('This student is no longer on the active roster.')
+  }
+
+  const deletedAt = new Date().toISOString()
+  const nextRoster = roster.map(student =>
+    student.historyId === historyId ? { ...student, deletedAt } : student)
+  localStorage.setItem(storageKey, JSON.stringify(nextRoster))
+  return nextRoster.filter(student => !student.deletedAt)
 }
 
 export function saveStudent(input, historyId = null) {
@@ -48,7 +65,7 @@ export function saveStudent(input, historyId = null) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(student.email)) errors.email = 'Enter a valid Google account email.'
   if (!batches.includes(student.batch)) errors.batch = 'Select a batch.'
 
-  const roster = readRoster()
+  const roster = readStoredRoster()
   const others = roster.filter(entry => entry.historyId !== historyId)
   const id = student.id.toLowerCase()
   if (!errors.id && others.some(entry => entry.id.toLowerCase() === id || entry.historyId.toLowerCase() === id)) {
@@ -58,7 +75,7 @@ export function saveStudent(input, historyId = null) {
     errors.email = 'This email is already in use.'
   }
   if (Object.keys(errors).length) return { errors }
-  if (historyId !== null && others.length === roster.length) {
+  if (historyId !== null && !roster.some(entry => entry.historyId === historyId && !entry.deletedAt)) {
     throw new Error('This student could not be found.')
   }
 
@@ -68,5 +85,5 @@ export function saveStudent(input, historyId = null) {
     ? [...roster, saved]
     : roster.map(entry => entry.historyId === historyId ? saved : entry)
   localStorage.setItem(storageKey, JSON.stringify(nextRoster))
-  return { roster: nextRoster, student: saved }
+  return { roster: nextRoster.filter(entry => !entry.deletedAt), student: saved }
 }

@@ -104,7 +104,7 @@ function PortalLayout({ role, account, onSignOut, groups }) {
   const menuOpen = openAt === locationKey
   const closeMenu = () => setOpenAt(null)
   function navigationLinks(pages) {
-    return pages.map(({ path, title, icon: Icon }) => (
+    return pages.filter(page => !page.hiddenFromSidebar).map(({ path, title, icon: Icon }) => (
       <NavLink key={path} to={path ? '/' + role + '/' + path : '/' + role} onClick={closeMenu} end>
         <Icon size={17} aria-hidden="true" /> {title}
       </NavLink>

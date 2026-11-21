@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { formatBillingMonth, formatTuitionAmount } from './tuitionFormat.js'
-import { listStudentTuition } from './tuitionRepository.js'
+import { feeNotSetStatus, listStudentTuition } from './tuitionRepository.js'
 
 export function TuitionHistory({ student, waiverOnly = false }) {
   let records
@@ -43,9 +43,9 @@ function TuitionTable({ records, label = 'Monthly tuition records' }) {
         <tbody>{records.map(record => (
           <tr key={record.month}>
             <th scope="row" className="bg-transparent">{formatBillingMonth(record.month)}</th>
-            <td>{formatTuitionAmount(record.baseFee)}</td>
-            <td>{record.scholarship}% · {formatTuitionAmount(record.baseFee - record.due)} off</td>
-            <td className="font-semibold">{formatTuitionAmount(record.due)}</td>
+            <td>{record.baseFee === null ? feeNotSetStatus : formatTuitionAmount(record.baseFee)}</td>
+            <td>{record.scholarship}%{record.baseFee !== null && " · " + formatTuitionAmount(record.baseFee - record.due) + " off"}</td>
+            <td className="font-semibold">{record.due === null ? '—' : formatTuitionAmount(record.due)}</td>
             <td>{record.status}</td>
           </tr>
         ))}</tbody>
