@@ -1,9 +1,8 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { formatDate } from '../../demo.js'
-import { batches } from '../roster/rosterRepository.js'
 import {
-  curriculumFor, curriculumProgress, instituteWifi, publishedGrades,
+  instituteWifi, publishedGrades,
 } from './academicRepository.js'
 
 function AcademicPage({ title, demo, children }) {
@@ -13,50 +12,6 @@ function AcademicPage({ title, demo, children }) {
       {demo && <p className="page-description">Demo data</p>}
       <div className="mt-5">{children}</div>
     </>
-  )
-}
-
-export function Curriculum({ analysis = false }) {
-  const { role, account } = useOutletContext()
-  const [selectedBatch, setSelectedBatch] = useState(batches[0])
-  const student = role === 'student'
-  const batch = student ? account.batch : selectedBatch
-  const syllabus = curriculumFor(batch)
-  const progress = analysis ? curriculumProgress(batch, student ? account.historyId : undefined) : []
-  const completeCount = id => progress.filter(record => record.completed.includes(id)).length
-
-  return (
-    <AcademicPage title={analysis ? 'Curriculum Analysis' : 'Curriculum Details'} demo>
-      {student ? <p className="font-semibold">{batch} Batch</p> :
-        <label className="block max-w-xs font-semibold">Batch
-          <select value={batch} onChange={event => setSelectedBatch(event.target.value)}
-            className="mt-1 block w-full rounded-lg border border-field-border bg-field p-2">
-            {batches.map(day => <option key={day}>{day}</option>)}
-          </select>
-        </label>}
-      {!syllabus ? <p className="page-description">No syllabus has been posted for this batch.</p> :
-        analysis && !progress.length ? <p className="page-description">No curriculum progress has been recorded for this batch.</p> : (
-          <section className="mt-4 rounded-2xl border border-surface-border bg-surface p-5">
-            <h2 className="text-xl font-bold">{syllabus.course}</h2>
-            {analysis && (
-              <p className="mt-1 text-sm text-slate-600">{syllabus.topics.filter(topic => completeCount(topic.id) === progress.length).length} of {syllabus.topics.length} topics completed
-                {!student && ' across ' + progress.length + ' recorded progress ' + (progress.length === 1 ? 'entry' : 'entries')}.</p>
-            )}
-            <ol className="mt-3 divide-y divide-surface-border">
-              {syllabus.topics.map(topic => (
-                <li key={topic.id} className="py-3">
-                  <h3 className="font-bold">{topic.name}</h3>
-                  <p className="mt-1 text-sm text-slate-700">{topic.description}</p>
-                  {analysis && <p className="mt-1 text-sm font-semibold text-blue-900">
-                    {student ? completeCount(topic.id) ? 'Completed' : 'Remaining'
-                      : completeCount(topic.id) + ' completed · ' + (progress.length - completeCount(topic.id)) + ' remaining'}
-                  </p>}
-                </li>
-              ))}
-            </ol>
-          </section>
-        )}
-    </AcademicPage>
   )
 }
 

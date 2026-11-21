@@ -10,7 +10,8 @@ import AdminTuition from '../features/tuition/AdminTuition.jsx'
 import StudentTuition from '../features/tuition/StudentTuition.jsx'
 import AcademicCalendar from '../features/academics/AcademicCalendar.jsx'
 import CurriculumDetails from '../features/academics/CurriculumDetails.jsx'
-import { Curriculum, Grades, WifiInstructions } from '../features/academics/AcademicPages.jsx'
+import CurriculumAnalysis from '../features/academics/CurriculumAnalysis.jsx'
+import { Grades, WifiInstructions } from '../features/academics/AcademicPages.jsx'
 import { HomeworkManagement, StudentHomework } from '../features/homework/HomeworkPages.jsx'
 import { StudentAttendance, StudentOverview } from './StudentPages.jsx'
 
@@ -21,9 +22,9 @@ function EmptyPage({ message }) {
 }
 
 const academics = { title: 'Academics', pages: [
-  { path: 'grades', title: 'Grades', icon: GraduationCap, page: <Grades /> },
+  { path: 'grades', hiddenFromSidebar: true, title: 'Grades', icon: GraduationCap, page: <Grades /> },
   { path: 'curriculum-details', title: 'Curriculum Details', icon: FileText, page: <CurriculumDetails /> },
-  { path: 'curriculum-analysis', title: 'Curriculum Analysis', icon: ListChecks, page: <Curriculum analysis /> },
+  { path: 'curriculum-analysis', title: 'Curriculum Analysis', icon: ListChecks, page: <CurriculumAnalysis /> },
   { path: 'academic-calendar', title: 'Academic Calendar', icon: CalendarRange, page: <AcademicCalendar /> },
 ] }
 

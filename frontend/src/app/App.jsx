@@ -88,7 +88,6 @@ function SignIn({ onSignIn }) {
             <p>Fill in a sample account</p>
             <div>
               <button type="button" onClick={() => useSample('student')}>Student</button>
-              <button type="button" onClick={() => useSample('sundayStudent')}>Sunday student</button>
               <button type="button" onClick={() => useSample('admin')}>Admin</button>
               <button type="button" onClick={() => useSample('teacher')}>Teacher</button>
             </div>
