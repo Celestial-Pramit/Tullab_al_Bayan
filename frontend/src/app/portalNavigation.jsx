@@ -8,7 +8,8 @@ import StaffAttendance from '../features/attendance/StaffAttendance.jsx'
 import StudentManagement from '../features/admin/StudentManagement.jsx'
 import AdminTuition from '../features/tuition/AdminTuition.jsx'
 import StudentTuition from '../features/tuition/StudentTuition.jsx'
-import { Calendar, Curriculum, Grades, Homework, WifiInstructions } from '../features/academics/AcademicPages.jsx'
+import { Calendar, Curriculum, Grades, WifiInstructions } from '../features/academics/AcademicPages.jsx'
+import { HomeworkManagement, StudentHomework } from '../features/homework/HomeworkPages.jsx'
 import { StudentAttendance, StudentOverview } from './StudentPages.jsx'
 
 export const roleLabels = { admin: 'Admin', teacher: 'Teacher', student: 'Student' }
@@ -45,7 +46,8 @@ export function navigationFor(role) {
     { path: '', title: 'Dashboard', icon: LayoutDashboard, page: role === 'student' ? <StudentOverview /> : <StaffDashboard /> },
     { path: 'attendance', title: 'Attendance', icon: CalendarDays, page: role === 'student' ? <StudentAttendance /> :
       <StaffAttendance workspaceLabel={role === 'teacher' ? 'Teacher workspace' : 'Admin dashboard'} /> },
-    { path: 'homework', title: 'Homework', icon: BookOpenCheck, page: <Homework /> },
+    { path: 'homework', title: role === 'student' ? 'Homework' : 'Homework Management', icon: BookOpenCheck,
+      page: role === 'student' ? <StudentHomework /> : <HomeworkManagement role={role} /> },
   ]
 
   if (role === 'student') {

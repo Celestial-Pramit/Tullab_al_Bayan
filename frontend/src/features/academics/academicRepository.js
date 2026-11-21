@@ -1,4 +1,3 @@
-import { initialData } from '../../demo.js'
 import { batches } from '../roster/rosterRepository.js'
 
 const demoWeek = [
@@ -27,10 +26,6 @@ export function academicCalendar() {
   })
   return [...classes, { date: classes[6].date, type: 'Institute event', title: 'Arabic reading circle' }]
     .sort((first, second) => first.date.localeCompare(second.date))
-}
-
-export function publishedHomework() {
-  return [...initialData.homework].sort((first, second) => first.deadline.localeCompare(second.deadline))
 }
 
 const syllabus = {

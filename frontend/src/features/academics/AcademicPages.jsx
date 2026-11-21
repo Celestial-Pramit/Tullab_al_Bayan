@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom'
 import { formatDate } from '../../demo.js'
 import { batches } from '../roster/rosterRepository.js'
 import {
-  academicCalendar, curriculumFor, curriculumProgress, instituteWifi, publishedGrades, publishedHomework,
+  academicCalendar, curriculumFor, curriculumProgress, instituteWifi, publishedGrades,
 } from './academicRepository.js'
 
 function AcademicPage({ title, demo, children }) {
@@ -93,24 +93,6 @@ export function Grades() {
             </li>)}
           </ul>
         )}
-    </AcademicPage>
-  )
-}
-
-export function Homework() {
-  const assignments = publishedHomework()
-  return (
-    <AcademicPage title="Homework" demo>
-      {!assignments.length ? <p>No homework has been published yet.</p> :
-        <ul className="grid gap-4">
-          {assignments.map(item => (
-            <li key={item.id} className="rounded-2xl border border-surface-border bg-surface p-5">
-              <h2 className="font-bold">{item.title}</h2>
-              <p className="mt-2">{item.instructions}</p>
-              <p className="mt-2 text-sm font-semibold text-blue-900">Due <time dateTime={item.deadline}>{formatDate(item.deadline)}</time></p>
-            </li>
-          ))}
-        </ul>}
     </AcademicPage>
   )
 }

@@ -11,6 +11,7 @@ const accounts = {
   admin: { name: 'Portal Admin', email: 'admin@example.com' },
   teacher: { name: 'Demo Teacher', email: 'teacher@example.com' },
   student: initialData.students[0],
+  sundayStudent: initialData.students.find(student => student.id === 'SUN-001'),
 }
 const sessionKey = 'bayan-demo-role'
 
@@ -87,6 +88,7 @@ function SignIn({ onSignIn }) {
             <p>Fill in a sample account</p>
             <div>
               <button type="button" onClick={() => useSample('student')}>Student</button>
+              <button type="button" onClick={() => useSample('sundayStudent')}>Sunday student</button>
               <button type="button" onClick={() => useSample('admin')}>Admin</button>
               <button type="button" onClick={() => useSample('teacher')}>Teacher</button>
             </div>
@@ -152,33 +154,35 @@ function PortalLayout({ role, account, onSignOut, groups }) {
   )
 }
 
-function readRole() {
+function readAccountKey() {
   const role = sessionStorage.getItem(sessionKey)
   return Object.hasOwn(accounts, role) ? role : null
 }
 
-function getDemoAccount(role) {
-  if (role !== 'student') return accounts[role]
+function getDemoAccount(accountKey, role) {
+  const sample = accounts[accountKey]
+  if (role !== 'student') return sample
   try {
-    return readRoster().find(student => student.historyId === accounts.student.historyId) ?? accounts.student
+    return readRoster().find(student => student.historyId === sample.historyId) ?? sample
   } catch {
-    return accounts.student
+    return sample
   }
 }
 
 export default function App() {
-  const [role, setRole] = useState(readRole)
-  const account = getDemoAccount(role)
+  const [accountKey, setAccountKey] = useState(readAccountKey)
+  const role = accountKey === 'sundayStudent' ? 'student' : accountKey
+  const account = getDemoAccount(accountKey, role)
   const home = role ? '/' + role : '/sign-in'
 
-  function signIn(nextRole) {
-    sessionStorage.setItem(sessionKey, nextRole)
-    setRole(nextRole)
+  function signIn(nextAccountKey) {
+    sessionStorage.setItem(sessionKey, nextAccountKey)
+    setAccountKey(nextAccountKey)
   }
 
   function signOut() {
     sessionStorage.removeItem(sessionKey)
-    setRole(null)
+    setAccountKey(null)
   }
 
   return (

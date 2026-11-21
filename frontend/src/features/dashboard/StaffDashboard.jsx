@@ -3,7 +3,8 @@ import { ArrowUpRight, BookOpenCheck, CalendarDays, ClipboardCheck, CreditCard, 
 import './staffDashboard.css'
 import { Link, useOutletContext } from 'react-router-dom'
 import { formatDate } from '../../demo.js'
-import { academicCalendar, classDate, publishedHomework } from '../academics/academicRepository.js'
+import { academicCalendar, classDate } from '../academics/academicRepository.js'
+import { homeworkTitle, readHomework } from '../homework/homeworkRepository.js'
 import { markOptions, readSessions } from '../attendance/attendanceRepository.js'
 import { batches, readRoster } from '../roster/rosterRepository.js'
 import { coveredStatus, readTuition, tuitionFor } from '../tuition/tuitionRepository.js'
@@ -12,9 +13,9 @@ import { formatBillingMonth, formatTuitionAmount } from '../tuition/tuitionForma
 const shortcutGroups = {
   admin: [
     ['students', 'Student Management'], ['attendance', 'Attendance'], ['tuition', 'Tuition Management'],
-    ['scholarship-management', 'Scholarship Management'], ['homework', 'Homework'],
+    ['scholarship-management', 'Scholarship Management'], ['homework', 'Homework Management'],
   ],
-  teacher: [['attendance', 'Take attendance'], ['academic-calendar', 'Academic Calendar'], ['homework', 'Homework']],
+  teacher: [['attendance', 'Take attendance'], ['academic-calendar', 'Academic Calendar'], ['homework', 'Homework Management']],
 }
 
 function Summary({ title, period, to, icon: Icon, children }) {
@@ -85,11 +86,10 @@ function AdminSummary({ students, sessions, today, records }) {
   )
 }
 
-function TeacherSummary({ students, sessions, today }) {
+function TeacherSummary({ students, sessions, today, homework }) {
   const calendar = academicCalendar()
   const classes = calendar.filter(item => item.batch && item.date === today)
   const upcoming = calendar.filter(item => item.batch && item.date > today).slice(0, 3)
-  const homework = publishedHomework().filter(item => item.deadline >= today).slice(0, 3)
   return (
     <div className="grid gap-4 lg:grid-cols-3">
       <Summary title="Today's classes" period={formatDate(today) + ' · Demo schedule'}
@@ -107,27 +107,28 @@ function TeacherSummary({ students, sessions, today }) {
       <Summary title="Attendance progress" period={formatDate(today)} to="/teacher/attendance" icon={ClipboardCheck}>
         <AttendanceCompletion sessions={sessions} students={students} />
       </Summary>
-      <Summary title="Homework" period="Published demo assignments" to="/teacher/homework" icon={BookOpenCheck}>
+      <Summary title="Homework" period="Recently published by batch" to="/teacher/homework" icon={BookOpenCheck}>
         {homework.length ? <ul className="space-y-2">
-          {homework.map(item => <li key={item.id}>{item.title} · Due {formatDate(item.deadline)}</li>)}
-        </ul> : <p>No upcoming homework deadlines.</p>}
+          {homework.map(item => <li key={item.id}>{item.batch} Batch · {homeworkTitle(item.text)}</li>)}
+        </ul> : <p>No homework has been published yet.</p>}
       </Summary>
     </div>
   )
 }
 function DashboardData({ role }) {
-  let students, sessions, records
+  let students, sessions, records, homework
   const today = classDate()
   try {
     students = readRoster()
     sessions = readSessions().filter(session => session.date === today)
     // Check stored tuition before rendering the admin summary so errors stay local to this page.
     if (role === 'admin') records = readTuition()
+    else homework = readHomework().slice(0, 3)
   } catch {
     return <p className="text-red-800" role="alert">Dashboard records could not be loaded. Refresh to try again.</p>
   }
   const SummaryPage = role === 'admin' ? AdminSummary : TeacherSummary
-  return <SummaryPage students={students} sessions={sessions} today={today} records={records} />
+  return <SummaryPage students={students} sessions={sessions} today={today} records={records} homework={homework} />
 }
 
 export default function StaffDashboard() {

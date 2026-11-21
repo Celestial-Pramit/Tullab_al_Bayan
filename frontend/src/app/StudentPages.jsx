@@ -2,7 +2,7 @@ import React from 'react'
 import { ArrowRight, BookOpen, CalendarDays, CreditCard } from 'lucide-react'
 import { Link, useOutletContext } from 'react-router-dom'
 import { formatDate } from '../demo.js'
-import { publishedHomework } from '../features/academics/academicRepository.js'
+import { homeworkTitle, readHomework } from '../features/homework/homeworkRepository.js'
 import { markOptions, readSessions } from '../features/attendance/attendanceRepository.js'
 import { readRoster } from '../features/roster/rosterRepository.js'
 import { listStudentTuition } from '../features/tuition/tuitionRepository.js'
@@ -44,7 +44,14 @@ export function StudentOverview() {
   } catch {
     tuitionDetail = 'Tuition could not be loaded'
   }
-  const assignments = publishedHomework()
+  let assignments = []
+  let homeworkError
+  try {
+    const batch = readRoster().find(student => student.historyId === account.historyId)?.batch
+    if (batch) assignments = readHomework(batch)
+  } catch {
+    homeworkError = 'Homework could not be loaded.'
+  }
   const cards = [
     { path: 'attendance', title: 'Attendance', icon: CalendarDays, value: attendance.rate === null ? 'No records' : percent.format(attendance.rate), detail: attendance.error ?? (attendance.attended + ' of ' + attendance.marked + ' marked classes attended') },
     { path: 'homework', title: 'Homework', icon: BookOpen, value: assignments.length, detail: assignments.length === 1 ? 'Assignment available' : 'Assignments available' },
@@ -71,13 +78,13 @@ export function StudentOverview() {
       </div>
       <section className="student-panel" aria-labelledby="homework-preview">
         <div className="student-panel-heading">
-          <h2 id="homework-preview">Homework deadlines</h2>
+          <h2 id="homework-preview">Recent homework</h2>
           <Link to="/student/homework">View homework <ArrowRight size={16} aria-hidden="true" /></Link>
         </div>
-        {assignments.length ? (
+        {homeworkError ? <p className="student-empty" role="alert">{homeworkError}</p> : assignments.length ? (
           <ul className="assignment-list">
             {assignments.slice(0, 3).map(item => (
-              <li key={item.id}><strong>{item.title}</strong><time dateTime={item.deadline}>{formatDate(item.deadline)}</time></li>
+              <li key={item.id}><strong className="break-all">{homeworkTitle(item.text)}</strong>{item.deadline && <time dateTime={item.deadline}>{formatDate(item.deadline)}</time>}</li>
             ))}
           </ul>
         ) : <p className="student-empty">No assignments yet.</p>}
