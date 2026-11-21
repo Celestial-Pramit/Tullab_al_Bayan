@@ -8,7 +8,8 @@ import StaffAttendance from '../features/attendance/StaffAttendance.jsx'
 import StudentManagement from '../features/admin/StudentManagement.jsx'
 import AdminTuition from '../features/tuition/AdminTuition.jsx'
 import StudentTuition from '../features/tuition/StudentTuition.jsx'
-import { Calendar, Curriculum, Grades, WifiInstructions } from '../features/academics/AcademicPages.jsx'
+import AcademicCalendar from '../features/academics/AcademicCalendar.jsx'
+import { Curriculum, Grades, WifiInstructions } from '../features/academics/AcademicPages.jsx'
 import { HomeworkManagement, StudentHomework } from '../features/homework/HomeworkPages.jsx'
 import { StudentAttendance, StudentOverview } from './StudentPages.jsx'
 
@@ -22,7 +23,7 @@ const academics = { title: 'Academics', pages: [
   { path: 'grades', title: 'Grades', icon: GraduationCap, page: <Grades /> },
   { path: 'curriculum-details', title: 'Curriculum Details', icon: FileText, page: <Curriculum /> },
   { path: 'curriculum-analysis', title: 'Curriculum Analysis', icon: ListChecks, page: <Curriculum analysis /> },
-  { path: 'academic-calendar', title: 'Academic Calendar', icon: CalendarRange, page: <Calendar /> },
+  { path: 'academic-calendar', title: 'Academic Calendar', icon: CalendarRange, page: <AcademicCalendar /> },
 ] }
 
 const institute = { title: 'Institute', pages: [

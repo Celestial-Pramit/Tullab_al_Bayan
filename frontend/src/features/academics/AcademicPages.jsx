@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom'
 import { formatDate } from '../../demo.js'
 import { batches } from '../roster/rosterRepository.js'
 import {
-  academicCalendar, curriculumFor, curriculumProgress, instituteWifi, publishedGrades,
+  curriculumFor, curriculumProgress, instituteWifi, publishedGrades,
 } from './academicRepository.js'
 
 function AcademicPage({ title, demo, children }) {
@@ -56,25 +56,6 @@ export function Curriculum({ analysis = false }) {
             </ol>
           </section>
         )}
-    </AcademicPage>
-  )
-}
-
-export function Calendar() {
-  const { role, account } = useOutletContext()
-  const events = academicCalendar().filter(event => role !== 'student' || !event.batch || event.batch === account.batch)
-  return (
-    <AcademicPage title="Academic Calendar" demo>
-      {!events.length ? <p>No classes or institute events have been posted.</p> : (
-        <ul className="divide-y divide-surface-border rounded-2xl border border-surface-border bg-surface px-5">
-          {events.map(event => (
-            <li key={event.date + ':' + event.title} className="flex flex-wrap items-start justify-between gap-2 py-4">
-              <div><p className="font-bold">{event.title}</p><p className="text-sm text-slate-600">{event.type}{event.batch && ' · ' + event.batch + ' Batch'}</p></div>
-              <time dateTime={event.date} className="text-sm font-semibold">{formatDate(event.date)}</time>
-            </li>
-          ))}
-        </ul>
-      )}
     </AcademicPage>
   )
 }

@@ -95,7 +95,7 @@ function TeacherSummary({ students, sessions, today, homework }) {
       <Summary title="Today's classes" period={formatDate(today) + ' · Demo schedule'}
         to="/teacher/academic-calendar" icon={CalendarDays}>
         {classes.length ? classes.map(item => (
-          <p key={item.batch} className="mb-2 font-semibold">{item.batch} Batch · {item.type} · {item.title}</p>
+          <p key={item.batch} className="mb-2 font-semibold">{item.batch} Batch · {item.type}</p>
         )) : <p>No classes scheduled today.</p>}
         {upcoming.length > 0 && <>
           <h3 className="mt-4 text-sm font-bold">Upcoming classes</h3>

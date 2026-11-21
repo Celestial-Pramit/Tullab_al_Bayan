@@ -1,14 +1,5 @@
 import { batches } from '../roster/rosterRepository.js'
-
-const demoWeek = [
-  ['Physical', 'Arabic foundations'],
-  ['Online', 'Arabic reading practice'],
-  ['Physical', 'Grammar and sentence structure'],
-  ['Online', 'Listening and comprehension'],
-  ['Physical', 'Arabic foundations'],
-  ['Online', 'Guided reading'],
-  ['Physical', 'Vocabulary and conversation'],
-]
+import { scheduledClasses, shiftMonth } from './studentSchedule.js'
 
 export function classDate() {
   return new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Dhaka', dateStyle: 'short' }).format(new Date())
@@ -16,15 +7,14 @@ export function classDate() {
 
 export function academicCalendar() {
   const today = classDate()
-  const date = new Date(today + 'T00:00:00Z')
-  const classes = Array.from({ length: 14 }, (_, offset) => {
-    const day = new Date(date)
-    day.setUTCDate(date.getUTCDate() + offset)
-    const index = (day.getUTCDay() + 1) % 7
-    const [type, title] = demoWeek[index]
-    return { date: day.toISOString().slice(0, 10), batch: batches[index], type, title }
-  })
-  return [...classes, { date: classes[6].date, type: 'Institute event', title: 'Arabic reading circle' }]
+  const month = today.slice(0, 7)
+  const end = new Date(today + 'T00:00:00Z')
+  end.setUTCDate(end.getUTCDate() + 14)
+  const until = end.toISOString().slice(0, 10)
+  return [month, shiftMonth(month, 1)].flatMap(period =>
+    batches.flatMap(batch => scheduledClasses(batch, period)
+      .filter(item => item.date >= today && item.date < until)
+      .map(item => ({ ...item, batch, type: 'In-person class' }))))
     .sort((first, second) => first.date.localeCompare(second.date))
 }
 

@@ -1,0 +1,9 @@
+[data-class-day="true"] {
+  background: #cce8fb;
+  color: var(--navy);
+}
+
+[data-today="true"] {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
