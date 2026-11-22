@@ -1,19 +1,12 @@
 import React, { useState } from 'react'
-import { ArrowRight, BookOpen, ChevronRight, Eye, EyeOff, LogOut, Menu, X } from 'lucide-react'
+import { BookOpen, ChevronRight, LogOut, Menu, RefreshCw, X } from 'lucide-react'
 import { BrowserRouter, Navigate, NavLink, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import AccountAvatar from '../features/auth/AccountAvatar.jsx'
 import MyProfile from '../features/auth/MyProfile.jsx'
-import { readRoster } from '../features/roster/rosterRepository.js'
-import { initialData } from '../demo.js'
+import { startGoogleSignIn } from '../features/auth/supabaseAuth.js'
+import { useLiveAuth } from '../features/auth/useLiveAuth.js'
 import { navigationFor, roleLabels, WorkspacePage } from './portalNavigation.jsx'
 import './portal.css'
-const accounts = {
-  admin: { name: 'Portal Admin', email: 'admin@example.com' },
-  teacher: { name: 'Demo Teacher', email: 'teacher@example.com' },
-  student: initialData.students[0],
-  sundayStudent: initialData.students.find(student => student.id === 'SUN-001'),
-}
-const sessionKey = 'bayan-demo-role'
 
 function Brand() {
   return (
@@ -24,27 +17,21 @@ function Brand() {
   )
 }
 
-const demoPassword = 'BayanDemo2026'
-
-function SignIn({ onSignIn }) {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
+function SignIn({ configured, callbackError }) {
+  const [starting, setStarting] = useState(false)
   const [error, setError] = useState('')
-  function useSample(role) {
-    setEmail(accounts[role].email)
-    setPassword(demoPassword)
-    setShowPassword(false)
-    setError('')
-  }
+  const displayedError = error || (callbackError
+    ? 'Google sign-in could not be completed. Please try signing in again.'
+    : '')
 
-  function submit(event) {
-    event.preventDefault()
-    const role = Object.keys(accounts).find(key => accounts[key].email === email.trim().toLowerCase())
-    if (role && password === demoPassword) {
-      onSignIn(role)
-    } else {
-      setError('The email or password is incorrect. Try one of the sample accounts below.')
+  async function handleGoogleSignIn() {
+    setError('')
+    setStarting(true)
+    try {
+      await startGoogleSignIn()
+    } catch (signInError) {
+      setError(signInError?.message || 'Google sign-in could not start. Please try again.')
+      setStarting(false)
     }
   }
 
@@ -64,46 +51,103 @@ function SignIn({ onSignIn }) {
         <div className="sign-in-form">
           <p className="eyebrow">Al Bayan Institute</p>
           <h2 id="form-title">Sign in</h2>
-          <p>Choose a sample account or enter its demo credentials.</p>
-          <form onSubmit={submit}>
-            <label htmlFor="email">Email address</label>
-            <input id="email" type="email" autoComplete="username" placeholder="you@example.com" required
-              value={email} aria-invalid={Boolean(error)} aria-describedby={error ? 'sign-in-error' : undefined}
-              onChange={event => { setEmail(event.target.value); setError('') }} />
-            <label htmlFor="password">Password</label>
-            <div className="password-field">
-              <input id="password" type={showPassword ? 'text' : 'password'} autoComplete="current-password"
-                placeholder="Enter your password" required value={password}
-                aria-invalid={Boolean(error)} aria-describedby={error ? 'sign-in-error' : undefined}
-                onChange={event => { setPassword(event.target.value); setError('') }} />
-              <button type="button" aria-controls="password" aria-label={showPassword ? 'Hide password' : 'Show password'}
-                onClick={() => setShowPassword(visible => !visible)}>
-                {showPassword ? <EyeOff size={19} aria-hidden="true" /> : <Eye size={19} aria-hidden="true" />}
-              </button>
-            </div>
-            {error && <p id="sign-in-error" className="error" role="alert">{error}</p>}
-            <button type="submit" className="primary-button">Sign in <ArrowRight size={17} aria-hidden="true" /></button>
-          </form>
-          <div className="demo-accounts">
-            <p>Fill in a sample account</p>
-            <div>
-              <button type="button" onClick={() => useSample('student')}>Student</button>
-              <button type="button" onClick={() => useSample('admin')}>Admin</button>
-              <button type="button" onClick={() => useSample('teacher')}>Teacher</button>
-            </div>
-          </div>
+          <p>Sign in with your Google account approved by Al Bayan Institute.</p>
 
+          {!configured && (
+            <p className="google-notice mt-4" role="status">
+              Live authentication is not configured. Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> in <code>.env.local</code>.
+            </p>
+          )}
+
+          <button
+            type="button"
+            className="google-button"
+            disabled={!configured || starting}
+            aria-describedby={displayedError ? 'sign-in-error' : undefined}
+            onClick={handleGoogleSignIn}
+          >
+            <span className="google-mark" aria-hidden="true">G</span>
+            {starting ? 'Redirecting to Google...' : 'Continue with Google'}
+          </button>
+
+          {displayedError && (
+            <p id="sign-in-error" className="error mt-3" role="alert">{displayedError}</p>
+          )}
         </div>
       </section>
     </main>
   )
 }
-function PortalLayout({ role, account, onSignOut, groups }) {
+
+function AccessStatusScreen({ title, message, error, actionLabel, onAction, onSignOut, signOutError }) {
+  return (
+    <main className="min-h-dvh p-4 sm:p-8">
+      <div className="mx-auto max-w-2xl space-y-5">
+        <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-surface-border bg-surface p-4 sm:px-6">
+          <Brand />
+          {onSignOut && (
+            <button type="button" onClick={onSignOut}
+              className="inline-flex items-center gap-2 rounded-lg border border-field-border bg-field px-3 py-2 text-sm font-semibold text-blue-950 hover:bg-blue-50">
+              <LogOut size={17} aria-hidden="true" /> Sign out
+            </button>
+          )}
+        </header>
+        <section className="rounded-2xl border border-surface-border bg-surface p-5 sm:p-7">
+          <h1 className="text-2xl font-bold">{title}</h1>
+          <p className="mt-2 text-slate-700" role={error ? 'alert' : 'status'}>{message}</p>
+          {signOutError && <p className="mt-3 text-sm text-red-800" role="alert">{signOutError}</p>}
+          {onAction && (
+            <button type="button" onClick={onAction}
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-700 px-4 py-2 font-semibold text-white hover:bg-blue-800">
+              <RefreshCw size={16} aria-hidden="true" /> {actionLabel}
+            </button>
+          )}
+        </section>
+      </div>
+    </main>
+  )
+}
+
+function PendingAccessScreen({ account, onRetry, onSignOut, signOutError }) {
+  return (
+    <main className="min-h-dvh p-4 sm:p-8">
+      <div className="mx-auto max-w-2xl space-y-5">
+        <header className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-surface-border bg-surface p-4 sm:px-6">
+          <Brand />
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" onClick={onRetry}
+              className="inline-flex items-center gap-2 rounded-lg border border-field-border bg-field px-3 py-2 text-sm font-semibold text-blue-950 hover:bg-blue-50">
+              <RefreshCw size={16} aria-hidden="true" /> Check access again
+            </button>
+            <button type="button" onClick={onSignOut}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-950 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-900">
+              <LogOut size={17} aria-hidden="true" /> Sign out
+            </button>
+          </div>
+        </header>
+        {signOutError && <p className="text-sm text-red-800" role="alert">{signOutError}</p>}
+        <section className="surface-banner rounded-2xl p-5 sm:p-6">
+          <p className="eyebrow">Awaiting institute access</p>
+          <p className="mt-2 text-slate-700">
+            Your Google account has not been linked to an administrator, teacher, or student record yet.
+          </p>
+        </section>
+        <MyProfile account={account} role="pending" />
+      </div>
+    </main>
+  )
+}
+
+function PortalLayout({ role, account, onSignOut, signOutError, groups }) {
   const label = roleLabels[role]
   const { key: locationKey } = useLocation()
   const [openAt, setOpenAt] = useState(null)
   const menuOpen = openAt === locationKey
   const closeMenu = () => setOpenAt(null)
+  const accountSubtitle = role === 'student'
+    ? (account.id ?? 'Student') + (account.isActive ? '' : ' · Inactive')
+    : label
+
   function navigationLinks(pages) {
     return pages.filter(page => !page.hiddenFromSidebar).map(({ path, title, icon: Icon }) => (
       <NavLink key={path} to={path ? '/' + role + '/' + path : '/' + role} onClick={closeMenu} end>
@@ -122,12 +166,11 @@ function PortalLayout({ role, account, onSignOut, groups }) {
           <AccountAvatar account={account} className="size-10 text-sm" />
           <span className="sidebar-account-details">
             <strong>{account.name}</strong>
-            <small>{role === 'student' ? account.id : label}</small>
+            <small>{accountSubtitle}</small>
           </span>
           <ChevronRight size={16} aria-hidden="true" />
         </NavLink>
         <nav aria-label={label + ' navigation'}>
-
           {groups.map(group => (
             <section key={group.title} aria-labelledby={'nav-' + group.title.toLowerCase()}>
               <h2 id={'nav-' + group.title.toLowerCase()}>{group.title}</h2>
@@ -146,6 +189,7 @@ function PortalLayout({ role, account, onSignOut, groups }) {
           <button type="button" className="portal-sign-out" onClick={onSignOut}><LogOut size={17} aria-hidden="true" /> Sign out</button>
         </header>
         <main id="portal-content" tabIndex={-1} className="portal-content">
+          {signOutError && <p className="mb-4 text-sm text-red-800" role="alert">{signOutError}</p>}
           <Outlet context={{ role, account }} />
         </main>
       </div>
@@ -153,47 +197,76 @@ function PortalLayout({ role, account, onSignOut, groups }) {
   )
 }
 
-function readAccountKey() {
-  const role = sessionStorage.getItem(sessionKey)
-  return Object.hasOwn(accounts, role) ? role : null
-}
-
-function getDemoAccount(accountKey, role) {
-  const sample = accounts[accountKey]
-  if (role !== 'student') return sample
-  try {
-    return readRoster().find(student => student.historyId === sample.historyId) ?? sample
-  } catch {
-    return sample
-  }
-}
-
 export default function App() {
-  const [accountKey, setAccountKey] = useState(readAccountKey)
-  const role = accountKey === 'sundayStudent' ? 'student' : accountKey
-  const account = getDemoAccount(accountKey, role)
+  const auth = useLiveAuth()
+  const [signOutError, setSignOutError] = useState('')
+
+  async function handleSignOut() {
+    setSignOutError('')
+    try {
+      await auth.signOut()
+    } catch (error) {
+      setSignOutError(error?.message || 'Sign out failed. Please try again.')
+    }
+  }
+
+  if (auth.loading) {
+    return (
+      <AccessStatusScreen
+        title="Checking institute access"
+        message="Verifying your Google sign-in and portal permissions..."
+      />
+    )
+  }
+
+  if (auth.error) {
+    return (
+      <AccessStatusScreen
+        title="Access check failed"
+        message={auth.error}
+        error
+        actionLabel="Try again"
+        onAction={auth.retry}
+        onSignOut={auth.session ? handleSignOut : undefined}
+        signOutError={signOutError}
+      />
+    )
+  }
+
+  const account = auth.profile
+  const role = account?.role ?? null
+
+  if (role === 'pending') {
+    return (
+      <BrowserRouter>
+        <Routes>
+          <Route path="*" element={
+            <PendingAccessScreen
+              account={account}
+              onRetry={auth.retry}
+              onSignOut={handleSignOut}
+              signOutError={signOutError}
+            />
+          } />
+        </Routes>
+      </BrowserRouter>
+    )
+  }
+
   const home = role ? '/' + role : '/sign-in'
-
-  function signIn(nextAccountKey) {
-    sessionStorage.setItem(sessionKey, nextAccountKey)
-    setAccountKey(nextAccountKey)
-  }
-
-  function signOut() {
-    sessionStorage.removeItem(sessionKey)
-    setAccountKey(null)
-  }
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/sign-in" element={role ? <Navigate to={home} replace /> : <SignIn onSignIn={signIn} />} />
+        <Route path="/sign-in" element={
+          role ? <Navigate to={home} replace /> : <SignIn configured={auth.configured} callbackError={auth.callbackError} />
+        } />
         {Object.keys(roleLabels).map(workspace => {
           const groups = navigationFor(workspace)
           return (
             <Route key={workspace} path={'/' + workspace} element={
               role === workspace
-                ? <PortalLayout role={role} account={account} onSignOut={signOut} groups={groups} />
+                ? <PortalLayout role={role} account={account} onSignOut={handleSignOut} signOutError={signOutError} groups={groups} />
                 : <Navigate to={home} replace />
             }>
               <Route path="profile" element={<MyProfile key={workspace} account={account} role={role} />} />
