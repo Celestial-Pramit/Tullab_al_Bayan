@@ -1,0 +1,284 @@
+
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+
+export type Database = {
+
+  "public": {
+          Tables: {
+            "_archived_bayan_staff_access": {
+                  Row: {
+                    "role": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "role": string,"user_id": string
+                  }
+                  Update: {
+                    "role"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+
+                  ]
+                },"_archived_bayan_student_profiles": {
+                  Row: {
+                    "batch": string,"full_name": string,"student_id": string,"user_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "batch": string,"full_name": string,"student_id": string,"user_id"?: string | null
+                  }
+                  Update: {
+                    "batch"?: string,"full_name"?: string,"student_id"?: string,"user_id"?: string | null
+                  }
+                  Relationships: [
+
+                  ]
+                },"batches": {
+                  Row: {
+                    "class_time": string | null,"created_at": string,"day_of_week": number,"display_order": number,"id": number,"name": string,"updated_at": string,"venue": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "class_time"?: string | null,"created_at"?: string,"day_of_week": number,"display_order": number,"id": number,"name": string,"updated_at"?: string,"venue"?: string | null
+                  }
+                  Update: {
+                    "class_time"?: string | null,"created_at"?: string,"day_of_week"?: number,"display_order"?: number,"id"?: number,"name"?: string,"updated_at"?: string,"venue"?: string | null
+                  }
+                  Relationships: [
+
+                  ]
+                },"homework_assignments": {
+                  Row: {
+                    "batch_id": number,"deadline": string | null,"id": string,"instructions": string,"published_at": string,"published_by": string | null,"title": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "batch_id": number,"deadline"?: string | null,"id"?: string,"instructions": string,"published_at"?: string,"published_by"?: string | null,"title": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "batch_id"?: number,"deadline"?: string | null,"id"?: string,"instructions"?: string,"published_at"?: string,"published_by"?: string | null,"title"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "homework_assignments_batch_id_fkey"
+      columns: ["batch_id"]
+isOneToOne: false
+      referencedRelation: "batches"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"students": {
+                  Row: {
+                    "batch_assigned_at": string,"batch_id": number,"created_at": string,"deactivated_at": string | null,"default_monthly_fee": number | null,"default_scholarship_percent": number,"email": string | null,"enrolled_at": string,"full_name": string,"id": string,"is_active": boolean,"student_code": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "batch_assigned_at"?: string,"batch_id": number,"created_at"?: string,"deactivated_at"?: string | null,"default_monthly_fee"?: number | null,"default_scholarship_percent"?: number,"email"?: string | null,"enrolled_at"?: string,"full_name": string,"id"?: string,"is_active"?: boolean,"student_code": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "batch_assigned_at"?: string,"batch_id"?: number,"created_at"?: string,"deactivated_at"?: string | null,"default_monthly_fee"?: number | null,"default_scholarship_percent"?: number,"email"?: string | null,"enrolled_at"?: string,"full_name"?: string,"id"?: string,"is_active"?: boolean,"student_code"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "students_batch_id_fkey"
+      columns: ["batch_id"]
+isOneToOne: false
+      referencedRelation: "batches"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"user_roles": {
+                  Row: {
+                    "created_at": string,"full_name": string | null,"role": string,"staff_code": string | null,"student_id": string | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"full_name"?: string | null,"role": string,"staff_code"?: string | null,"student_id"?: string | null,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"full_name"?: string | null,"role"?: string,"staff_code"?: string | null,"student_id"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "user_roles_student_id_fkey"
+      columns: ["student_id"]
+isOneToOne: true
+      referencedRelation: "students"
+      referencedColumns: ["id"]
+    }
+                  ]
+                }
+          }
+          Views: {
+            "bayan_staff_access": {
+                  Row: {
+                    "role": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                           "role"?: string | null,"user_id"?: string | null
+                         }
+                        Update: {
+                           "role"?: string | null,"user_id"?: string | null
+                         }
+                        Relationships: [
+
+                  ]
+                },"bayan_student_profiles": {
+                  Row: {
+                    "batch": string,"full_name": string,"student_id": string,"user_id": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+
+                  ]
+                }
+          }
+          Functions: {
+            "current_student_id":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
+"current_user_role":
+{ Args: Record<PropertyKey, never>; Returns: string
+                           },
+"get_teacher_roster":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "batch_id": number,"full_name": string,"id": string,"student_code": string
+            }[]
+                           },
+"is_active_student":
+{ Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"link_student_account":
+{ Args: { "p_student_id": string,"p_user_id": string }; Returns: undefined
+                           },
+"list_pending_auth_users":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "created_at": string,"email": string,"full_name": string,"user_id": string
+            }[]
+                           },
+"unlink_student_account":
+{ Args: { "p_student_id": string }; Returns: undefined
+                           }
+          }
+          Enums: {
+            [_ in never]: never
+          }
+          CompositeTypes: {
+            [_ in never]: never
+          }
+        }
+}
+
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof DatabaseWithoutInternals }
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never
+
+export const Constants = {
+  "public": {
+          Enums: {
+
+          }
+        }
+} as const
