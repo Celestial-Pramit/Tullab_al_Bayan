@@ -199,14 +199,12 @@ function PortalLayout({ role, account, onSignOut, signOutError, groups }) {
 
 export default function App() {
   const auth = useLiveAuth()
-  const [signOutError, setSignOutError] = useState('')
 
   async function handleSignOut() {
-    setSignOutError('')
     try {
       await auth.signOut()
-    } catch (error) {
-      setSignOutError(error?.message || 'Sign out failed. Please try again.')
+    } catch {
+      // Sign-out failures are captured and cleared inside useLiveAuth.
     }
   }
 
@@ -228,7 +226,7 @@ export default function App() {
         actionLabel="Try again"
         onAction={auth.retry}
         onSignOut={auth.session ? handleSignOut : undefined}
-        signOutError={signOutError}
+        signOutError={auth.signOutError}
       />
     )
   }
@@ -245,7 +243,7 @@ export default function App() {
               account={account}
               onRetry={auth.retry}
               onSignOut={handleSignOut}
-              signOutError={signOutError}
+              signOutError={auth.signOutError}
             />
           } />
         </Routes>
@@ -266,7 +264,7 @@ export default function App() {
           return (
             <Route key={workspace} path={'/' + workspace} element={
               role === workspace
-                ? <PortalLayout role={role} account={account} onSignOut={handleSignOut} signOutError={signOutError} groups={groups} />
+                ? <PortalLayout role={role} account={account} onSignOut={handleSignOut} signOutError={auth.signOutError} groups={groups} />
                 : <Navigate to={home} replace />
             }>
               <Route path="profile" element={<MyProfile key={workspace} account={account} role={role} />} />
