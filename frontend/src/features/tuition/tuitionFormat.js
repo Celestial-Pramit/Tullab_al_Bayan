@@ -1,12 +1,12 @@
-const money = new Intl.NumberFormat('en-BD', {
-  style: 'currency', currency: 'BDT', currencyDisplay: 'code', minimumFractionDigits: 0, maximumFractionDigits: 2,
-})
-const monthLabel = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+const bdt = new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT', minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const month = new Intl.DateTimeFormat('en-BD', { month: 'long', year: 'numeric', timeZone: 'Asia/Dhaka' })
 
 export function formatTuitionAmount(amount) {
-  return money.format(amount / 100)
+  return bdt.format(Number(amount))
 }
 
-export function formatBillingMonth(month) {
-  return monthLabel.format(new Date(month + '-01T00:00:00Z'))
+export function formatBillingMonth(value) {
+  if (!value) return ''
+  const normalized = value.length === 7 ? `${value}-01` : value
+  return month.format(new Date(`${normalized}T00:00:00+06:00`))
 }

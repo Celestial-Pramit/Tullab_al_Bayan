@@ -1,4 +1,4 @@
-import { initialData } from '../../demo.js'
+import { supabase } from '../auth/supabaseAuth.js'
 
 export const scholarships = [0, 50, 100]
 export const paymentStatuses = ['Paid', 'Unpaid']
@@ -6,58 +6,76 @@ export const coveredStatus = 'Covered by scholarship'
 export const feeNotSetStatus = 'Fee not set'
 export const noAmountDueStatus = 'No amount due'
 export const tuitionStatuses = [...paymentStatuses, coveredStatus, feeNotSetStatus, noAmountDueStatus]
-const storageKey = 'bayan-tuition-v1'
-const sampleRecords = Object.fromEntries(Object.entries(initialData.tuition).map(([key, payment]) => [
-  key, { baseFee: 100000, scholarship: 0, payment },
-]))
 
-export function readTuition() {
-  const saved = localStorage.getItem(storageKey)
-  return saved === null ? sampleRecords : JSON.parse(saved)
+function requireClient() {
+  if (!supabase) throw new Error('Supabase client is not configured.')
 }
 
-function amountDue(baseFee, scholarship) {
-  if (scholarship === 100) return 0
-  if (baseFee === null) return null
-  return scholarship === 50 ? Math.round(baseFee / 2) : baseFee
+function mapRecord(row) {
+  return {
+    id: row.id,
+    studentUuid: row.student_id,
+    batchId: row.batch_id,
+    month: row.billing_month.slice(0, 7),
+    billingMonth: row.billing_month,
+    baseFee: row.base_fee === null ? null : Number(row.base_fee),
+    scholarship: row.scholarship_percent,
+    due: row.amount_due === null ? null : Number(row.amount_due),
+    payment: row.payment_status,
+    status: row.display_status,
+    paidAt: row.paid_at,
+    notes: row.notes ?? '',
+  }
 }
 
-export function tuitionFor(records, month, historyId) {
-  const record = records[month + ':' + historyId]
-  const baseFee = record?.baseFee ?? null
-  const scholarship = record?.scholarship ?? 0
-  const payment = record?.payment ?? 'Unpaid'
-  const due = amountDue(baseFee, scholarship)
-  const status = scholarship === 100 ? coveredStatus : due === null ? feeNotSetStatus : due > 0 ? payment : noAmountDueStatus
-  return { baseFee, scholarship, payment, due, status }
+export async function listMonthlyTuition({ billingMonth, batchId } = {}) {
+  requireClient()
+  let query = supabase.from('monthly_tuition').select('*').order('billing_month', { ascending: false })
+  if (billingMonth) query = query.eq('billing_month', billingMonth.length === 7 ? `${billingMonth}-01` : billingMonth)
+  if (batchId) query = query.eq('batch_id', batchId)
+  const { data, error } = await query
+  if (error) throw error
+  return (data ?? []).map(mapRecord)
 }
+
+export async function listStudentTuition(studentUuid) {
+  requireClient()
+  if (!studentUuid) return []
+  const { data, error } = await supabase.from('monthly_tuition').select('*').eq('student_id', studentUuid).order('billing_month', { ascending: false })
+  if (error) throw error
+  return (data ?? []).map(mapRecord)
+}
+
+export async function generateMonthlyTuition(billingMonth, batchId = null) {
+  requireClient()
+  const month = billingMonth.length === 7 ? `${billingMonth}-01` : billingMonth
+  const { data, error } = await supabase.rpc('generate_monthly_tuition', { p_billing_month: month, p_batch_id: batchId })
+  if (error) throw error
+  return data
+}
+
+export async function saveTuition(record, changes) {
+  requireClient()
+  const patch = {}
+  if (Object.hasOwn(changes, 'baseFee')) patch.base_fee = changes.baseFee
+  if (Object.hasOwn(changes, 'scholarship')) patch.scholarship_percent = changes.scholarship
+  if (Object.hasOwn(changes, 'payment')) patch.payment_status = changes.payment
+  if (Object.hasOwn(changes, 'notes')) patch.notes = changes.notes?.trim() || null
+  const { data, error } = await supabase.from('monthly_tuition').update(patch).eq('id', record.id).select('*').single()
+  if (error) throw error
+  return mapRecord(data)
+}
+
 export function parseFee(value) {
-  const trimmed = value.trim()
-  if (!/^\d{1,9}(?:\.\d{1,2})?$/.test(trimmed)) {
-    throw new Error('Enter a non-negative BDT fee with up to nine whole digits and two decimal places.')
-  }
-  return Math.round(Number(trimmed) * 100)
+  if (value === '') return { value: null }
+  if (!/^\d+(\.\d{1,2})?$/.test(value) || Number(value) > 99999999.99) return { error: 'Enter a valid BDT amount with up to two decimal places.' }
+  return { value: Number(value) }
 }
 
-export function saveTuition(month, historyId, changes) {
-  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(month)) throw new Error('Choose a billing month.')
-  const records = readTuition()
-  const { baseFee, scholarship, payment } = { ...tuitionFor(records, month, historyId), ...changes }
-  if ((baseFee !== null && (!Number.isSafeInteger(baseFee) || baseFee < 0)) || !scholarships.includes(scholarship)
-      || !paymentStatuses.includes(payment)) throw new Error('Enter valid tuition details.')
-  if (changes.payment && !(amountDue(baseFee, scholarship) > 0)) {
-    throw new Error('Payment status is available when an amount is due.')
-  }
-  const next = { ...records, [month + ':' + historyId]: { baseFee, scholarship, payment } }
-  localStorage.setItem(storageKey, JSON.stringify(next))
-  return next
-}
-
-export function listStudentTuition(historyId) {
-  const records = readTuition()
-  return Object.keys(records)
-    .filter(key => key.slice(8) === historyId)
-    .map(key => key.slice(0, 7))
-    .sort((first, second) => second.localeCompare(first))
-    .map(month => ({ month, ...tuitionFor(records, month, historyId) }))
+// Transitional exports consumed by Iffat's unmigrated StaffDashboard.
+export const readTuition = listMonthlyTuition
+export function tuitionFor(records, month, studentUuid) {
+  return Array.isArray(records)
+    ? records.find(record => record.month === month && record.studentUuid === studentUuid)
+    : undefined
 }
