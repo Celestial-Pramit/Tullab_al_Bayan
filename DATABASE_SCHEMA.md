@@ -1,3 +1,5 @@
+> **Status Notice (23 November 2026):** This earlier proposal has been **superseded** by [docs/DATABASE_DESIGN.md](docs/DATABASE_DESIGN.md) and the Day 1 handoff guide in [docs/DAY1_FOUNDATION_HANDOFF.md](docs/DAY1_FOUNDATION_HANDOFF.md). Retained below for historical context only.
+
 # Ṭullāb al-Bayān database design
 
 **Target:** Supabase PostgreSQL  

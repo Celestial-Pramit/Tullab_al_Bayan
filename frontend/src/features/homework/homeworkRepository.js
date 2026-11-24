@@ -1,39 +1,109 @@
-import { initialData } from '../../demo.js'
-import { batches } from '../roster/rosterRepository.js'
+import { supabase } from '../auth/supabaseAuth.js'
 
-const storageKey = 'bayan-homework-v1'
-const sampleHomework = initialData.homework.map(item => ({
-  id: 'demo-' + item.id,
-  batch: 'Saturday',
-  text: item.title + '\n\n' + item.instructions,
-  deadline: item.deadline,
-  publishedAt: '2026-11-20T00:00:00.000Z',
-}))
+const SELECT_COLUMNS = 'id, batch_id, title, instructions, deadline, published_at, updated_at, batches(name)'
 
-export function readHomework(batch) {
-  const saved = localStorage.getItem(storageKey)
-  const assignments = saved === null ? sampleHomework : JSON.parse(saved)
-  const matching = batch === undefined ? assignments : assignments.filter(item => item.batch === batch)
-  return [...matching].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
-}
-
-export function saveHomework(batch, text, id) {
-  if (!batches.includes(batch) || !text.trim()) throw new Error('Enter homework text for the selected batch.')
-  const assignments = readHomework()
-  if (id && !assignments.some(item => item.id === id && item.batch === batch)) {
-    throw new Error('This assignment is no longer available in this batch.')
+function mapHomeworkRow(row) {
+  return {
+    id: row.id,
+    batchId: row.batch_id,
+    batchName: row.batches?.name ?? null,
+    title: row.title,
+    instructions: row.instructions,
+    deadline: row.deadline ?? null,
+    publishedAt: row.published_at,
+    updatedAt: row.updated_at,
   }
-  const next = id
-    ? assignments.map(item => item.id === id && item.batch === batch ? { ...item, text } : item)
-    : [{ id: crypto.randomUUID(), batch, text, publishedAt: new Date().toISOString() }, ...assignments]
-  localStorage.setItem(storageKey, JSON.stringify(next))
 }
 
-export function deleteHomework(batch, id) {
-  const next = readHomework().filter(item => item.id !== id || item.batch !== batch)
-  localStorage.setItem(storageKey, JSON.stringify(next))
+export async function listHomework(batchId) {
+  if (!supabase) throw new Error('Supabase client is not configured.')
+
+  let query = supabase
+    .from('homework_assignments')
+    .select(SELECT_COLUMNS)
+    .order('deadline', { ascending: true, nullsFirst: false })
+    .order('published_at', { ascending: false })
+
+  if (batchId !== undefined && batchId !== null) {
+    query = query.eq('batch_id', batchId)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return (data ?? []).map(mapHomeworkRow)
 }
 
-export function homeworkTitle(text) {
-  return text.trim().split(/\r?\n/, 1)[0]
+export async function saveHomework({ id, batchId, title, instructions, deadline }) {
+  if (!supabase) throw new Error('Supabase client is not configured.')
+
+  const numericBatchId = Number(batchId)
+  const cleanTitle = typeof title === 'string' ? title.trim() : ''
+  const rawInstructions = typeof instructions === 'string' ? instructions : ''
+  const cleanDeadline = typeof deadline === 'string' && deadline.trim() ? deadline.trim() : null
+
+  if (!Number.isInteger(numericBatchId) || numericBatchId < 1 || numericBatchId > 7) {
+    throw new Error('Select a valid batch before saving homework.')
+  }
+  if (!cleanTitle) {
+    throw new Error('Enter a homework title.')
+  }
+  if (!rawInstructions.trim()) {
+    throw new Error('Enter homework instructions.')
+  }
+  if (cleanDeadline !== null && !/^\d{4}-\d{2}-\d{2}$/.test(cleanDeadline)) {
+    throw new Error('Enter a valid deadline date (YYYY-MM-DD).')
+  }
+
+  if (id) {
+    const { data, error } = await supabase
+      .from('homework_assignments')
+      .update({
+        title: cleanTitle,
+        instructions: rawInstructions,
+        deadline: cleanDeadline,
+      })
+      .eq('id', id)
+      .eq('batch_id', numericBatchId)
+      .select(SELECT_COLUMNS)
+      .single()
+    if (error) throw error
+    return mapHomeworkRow(data)
+  }
+
+  const { data, error } = await supabase
+    .from('homework_assignments')
+    .insert({
+      batch_id: numericBatchId,
+      title: cleanTitle,
+      instructions: rawInstructions,
+      deadline: cleanDeadline,
+    })
+    .select(SELECT_COLUMNS)
+    .single()
+  if (error) throw error
+  return mapHomeworkRow(data)
+}
+
+export async function deleteHomework(id) {
+  if (!supabase) throw new Error('Supabase client is not configured.')
+  if (!id) throw new Error('Homework assignment ID is required.')
+
+  const { error } = await supabase
+    .from('homework_assignments')
+    .delete()
+    .eq('id', id)
+  if (error) throw error
+}
+
+// TODO(mostofa, iffat): Replace remaining synchronous readHomework() calls in
+// src/app/StudentPages.jsx and src/features/dashboard/StaffDashboard.jsx with
+// async listHomework(batchId?) before removing these transitional exports.
+export function readHomework() {
+  throw new Error('readHomework() is deprecated; migrate callers to async listHomework(batchId?).')
+}
+
+export function homeworkTitle(value) {
+  if (value && typeof value === 'object') return value.title ?? ''
+  if (typeof value === 'string') return value.trim().split(/\r?\n/, 1)[0]
+  return ''
 }
